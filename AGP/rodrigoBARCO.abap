@@ -12,16 +12,16 @@ on inob~klart = zconsklart~valor1 and
    zconsklart~aplicacion = 'VALIDACION' and
    zconsklart~programa = 'ZPPP0003' and
    zconsklart~campo = 'KLART' 
-where inob~OBJEK like '%100004256'
-
-'000000000000271353'
-
 inner join ztconstantes as zconsatinn
 on ausp~atinn = zconsatinn~valor1 and
    zconsatinn~modulo = 'PP' and
    zconsatinn~aplicacion = 'VALIDACION' and
    zconsatinn~programa = 'ZPPP0003' and
    zconsatinn~campo = 'ATINN' 
+where inob~OBJEK = '000000000700007650'
+
+
+
    
    
   select * from  inob 
