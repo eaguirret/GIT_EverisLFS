@@ -3,7 +3,7 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @EndUserText.label: 'Ordenes de proceso real nivel 1_2'
 
-define view Z_D_OrdProReal_Nv1_2 as select distinct from Z_D_OrdProReal_Nv1 as a
+define view Z_D_OrdProReal_Nv1_2 as select from Z_D_OrdProReal_Nv1 as a
 left outer join mbew b on b.matnr = a.Componente and b.bwkey = a.Centro_Consumo 
 
 {
