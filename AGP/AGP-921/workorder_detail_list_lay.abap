@@ -17,354 +17,658 @@
       ASSIGN lt_data->* TO <lt_table>.
       DATA: lt_ioconf_tab TYPE ioconf_tab.
       lt_ioconf_tab[] = <lt_table>[].
-	  
-      LOOP AT lt_ioconf_tab ASSIGNING FIELD-SYMBOL(<fs_table>).
-*        AGREGAR VALORES A LOS NUEVOS CAMPOS
-*        CONSULTA A LA TABLA AFPO
+
+"EMAT - Enrique Aguirre - AGP-921 - 13.10.2020 - Comentar
+
+*      LOOP AT lt_ioconf_tab ASSIGNING FIELD-SYMBOL(<fs_table>).
+**        AGREGAR VALORES A LOS NUEVOS CAMPOS
+**        CONSULTA A LA TABLA AFPO
+*        SELECT SINGLE kdauf posnr pwerk
+*          INTO (<fs_table>-zped_clie, <fs_table>-zpos_pedi, <fs_table>-zcentro)
+*          FROM afpo
+*          WHERE aufnr EQ <fs_table>-aufnr.
+**        CONSULTA A LA TABLA AUFK
+*        SELECT SINGLE zzcolor zzst_toc auart
+*          INTO (<fs_table>-zcolor_toc, <fs_table>-zestad_toc, <fs_table>-zcla_orden)
+*          FROM aufk
+*          WHERE aufnr EQ <fs_table>-aufnr.
+**        CONSULTA A LA TABLA AFKO
+*        SELECT SINGLE dispo gstrp gltrp cy_seqnr "+@0002-13/11/19
+*          INTO (<fs_table>-zplani_nec, <fs_table>-zfec_ini_ex, <fs_table>-zfec_fin_ex, <fs_table>-znum_coois) "+@0002-13/11/19
+*          FROM afko
+*          WHERE aufnr EQ <fs_table>-aufnr.
+*        IF <fs_table>-zped_clie IS NOT INITIAL.
+**          CONSULTA A LA TABLA VBPA
+*          SELECT SINGLE parvw
+*            INTO (<fs_table>-zsolicitante)
+*            FROM vbpa
+*            WHERE vbeln EQ <fs_table>-zped_clie
+*            AND parvw EQ 'AG'.
+**          CONSULTA A LA TABLA VBAK
+*          SELECT SINGLE vkbur submi
+*            INTO (<fs_table>-zmercado, <fs_table>-zlicitacion)
+*            FROM vbak
+*            WHERE vbeln EQ <fs_table>-zped_clie.
+**          CONSULTA A LA TABLA VBRP
+*          SELECT SINGLE vbeln
+*            INTO @DATA(ls_vbeln)
+*            FROM vbrp
+*            WHERE aubel EQ @<fs_table>-zped_clie.
+*          IF sy-subrc EQ 0 AND ls_vbeln IS NOT INITIAL.
+**            CONSULTA A LA TABLA ZTVBRK
+*            SELECT SINGLE fsalida fllegada awb
+*              INTO (<fs_table>-zfecha_etd, <fs_table>-zfecha_eta, <fs_table>-ztracking_number)
+*              FROM ztvbrk
+*              WHERE factamerica EQ ls_vbeln.
+**            CONSULTA A LA TABLA VBRK
+*            SELECT SINGLE fkdat
+*              INTO (<fs_table>-zfec_factura)
+*              FROM vbrk
+*              WHERE vbeln EQ ls_vbeln.
+*          ENDIF.
+**          CONSULTA A LA TABLA VBKD
+*          SELECT SINGLE bstdk inco1
+*            INTO (<fs_table>-zfec_referente, <fs_table>-zincoterms)
+*            FROM vbkd
+*            WHERE vbeln EQ <fs_table>-zped_clie.
+*        ENDIF.
+**        CONSULTA A LA TABLA CAUFV
+*        SELECT SINGLE ftrmi
+*          INTO (<fs_table>-zfecha_lib)
+*          FROM caufv
+*          WHERE aufnr EQ <fs_table>-aufnr.
+**        CONSULTA A LA TABLA MAKT
+*        SELECT SINGLE maktx
+*          INTO (<fs_table>-ztext_mat)
+*          FROM makt
+*          WHERE matnr EQ <fs_table>-matnr
+*          AND spras EQ sy-langu.
+**        CONSULTA A LA TABLA MARM
+*        DATA: ls_matnr_like TYPE mara-matnr.
+*        CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+*          EXPORTING
+*            input  = <fs_table>-matnr
+*          IMPORTING
+*            output = ls_matnr_like.
+*        CONCATENATE '%' ls_matnr_like INTO ls_matnr_like.
+*        SELECT SINGLE umren
+*          INTO (<fs_table>-zarea_pieza)
+*          FROM marm
+*          WHERE matnr EQ ls_matnr_like
+*          AND meinh EQ 'M2'.
+*        IF <fs_table>-zarea_pieza IS NOT INITIAL AND <fs_table>-zarea_pieza > 0.
+*          <fs_table>-zarea_pieza = <fs_table>-zarea_pieza / 100.
+*        ENDIF.
+**        CONSULTA A LA TABLA INOB 1
+*        SELECT SINGLE cuobj
+*          INTO @DATA(ls_cuobj)
+*          FROM inob
+*          WHERE objek LIKE @ls_matnr_like
+*          AND klart EQ '001'.
+*        IF sy-subrc EQ 0.
+*          DATA: ls_atinn TYPE ausp-atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_AGP_LEVEL'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP 1
+*          SELECT SINGLE atwrt
+*            INTO (<fs_table>-znivel_agp)
+*            FROM ausp
+*            WHERE objek EQ ls_cuobj
+*            AND atinn EQ ls_atinn.
+*
+*          CLEAR: ls_atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_PIECE_TYPE'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP 2
+*          SELECT SINGLE atwrt
+*            INTO @DATA(ls_atwrt)
+*            FROM ausp
+*            WHERE objek EQ @ls_cuobj
+*            AND atinn EQ @ls_atinn.
+*          IF sy-subrc EQ 0.
+**            CONSULTA A LA TABLA CAWN
+*            SELECT SINGLE atzhl
+*              INTO @DATA(ls_atzhl)
+*              FROM cawn
+*              WHERE atwrt EQ @ls_atwrt
+*              AND atinn EQ @ls_atinn.
+*            IF sy-subrc EQ 0.
+**              CONSULTA A LA TABLA CAWNT
+*              SELECT SINGLE atwtb
+*                INTO (<fs_table>-ztipo_bloque)
+*                FROM cawnt
+*                WHERE atzhl EQ ls_atzhl
+*                AND atinn EQ ls_atinn
+*                AND spras EQ sy-langu.
+*            ENDIF.
+*          ENDIF.
+*
+*          CLEAR: ls_atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_BALLISTIC_STANDARD'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP 2
+*          CLEAR: ls_atwrt.
+*          SELECT SINGLE atwrt
+*            INTO ls_atwrt
+*            FROM ausp
+*            WHERE objek EQ ls_cuobj
+*            AND atinn EQ ls_atinn.
+*          IF sy-subrc EQ 0.
+**            CONSULTA A LA TABLA CAWN
+*            CLEAR: ls_atzhl.
+*            SELECT SINGLE atzhl
+*              INTO ls_atzhl
+*              FROM cawn
+*              WHERE atwrt EQ ls_atwrt
+*              AND atinn EQ ls_atinn.
+*            IF sy-subrc EQ 0.
+**              CONSULTA A LA TABLA CAWNT
+*              SELECT SINGLE atwtb
+*                INTO (<fs_table>-zest_balistico)
+*                FROM cawnt
+*                WHERE atzhl EQ ls_atzhl
+*                AND atinn EQ ls_atinn
+*                AND spras EQ sy-langu.
+*            ENDIF.
+*          ENDIF.
+*
+*          CLEAR: ls_atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_BUSINESS_LINE'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP 2
+*          CLEAR: ls_atwrt.
+*          SELECT SINGLE atwrt
+*            INTO ls_atwrt
+*            FROM ausp
+*            WHERE objek EQ ls_cuobj
+*            AND atinn EQ ls_atinn.
+*          IF sy-subrc EQ 0.
+**            CONSULTA A LA TABLA CAWN
+*            CLEAR: ls_atzhl.
+*            SELECT SINGLE atzhl
+*              INTO ls_atzhl
+*              FROM cawn
+*              WHERE atwrt EQ ls_atwrt
+*              AND atinn EQ ls_atinn.
+*            IF sy-subrc EQ 0.
+**              CONSULTA A LA TABLA CAWNT
+*              SELECT SINGLE atwtb
+*                INTO (<fs_table>-zunid_negocio)
+*                FROM cawnt
+*                WHERE atzhl EQ ls_atzhl
+*                AND atinn EQ ls_atinn
+*                AND spras EQ sy-langu.
+*            ENDIF.
+*          ENDIF.
+*
+*          CLEAR: ls_atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_TRAZABILITY'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP 2
+*          CLEAR: ls_atwrt.
+*          SELECT SINGLE atwrt
+*            INTO ls_atwrt
+*            FROM ausp
+*            WHERE objek EQ ls_cuobj
+*            AND atinn EQ ls_atinn.
+*          IF sy-subrc EQ 0.
+**            CONSULTA A LA TABLA CAWN
+*            CLEAR: ls_atzhl.
+*            SELECT SINGLE atzhl
+*              INTO ls_atzhl
+*              FROM cawn
+*              WHERE atwrt EQ ls_atwrt
+*              AND atinn EQ ls_atinn.
+*            IF sy-subrc EQ 0.
+**              CONSULTA A LA TABLA CAWNT
+*              SELECT SINGLE atwtb
+*                INTO (<fs_table>-ztrazabilidad)
+*                FROM cawnt
+*                WHERE atzhl EQ ls_atzhl
+*                AND atinn EQ ls_atinn
+*                AND spras EQ sy-langu.
+*            ENDIF.
+*          ENDIF.
+*
+*          CLEAR: ls_atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_GEOMETRY_TYPE'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP 2
+*          CLEAR: ls_atwrt.
+*          SELECT SINGLE atwrt
+*            INTO ls_atwrt
+*            FROM ausp
+*            WHERE objek EQ ls_cuobj
+*            AND atinn EQ ls_atinn.
+*          IF sy-subrc EQ 0.
+**            CONSULTA A LA TABLA CAWN
+*            CLEAR: ls_atzhl.
+*            SELECT SINGLE atzhl
+*              INTO ls_atzhl
+*              FROM cawn
+*              WHERE atwrt EQ ls_atwrt
+*              AND atinn EQ ls_atinn.
+*            IF sy-subrc EQ 0.
+**              CONSULTA A LA TABLA CAWNT
+*              SELECT SINGLE atwtb
+*                INTO (<fs_table>-ztipo_geome)
+*                FROM cawnt
+*                WHERE atzhl EQ ls_atzhl
+*                AND atinn EQ ls_atinn
+*                AND spras EQ sy-langu.
+*            ENDIF.
+*          ENDIF.
+*
+*          CLEAR: ls_atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_PRODUCT_TYPE'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP 2
+*          CLEAR: ls_atwrt.
+*          SELECT SINGLE atwrt
+*            INTO ls_atwrt
+*            FROM ausp
+*            WHERE objek EQ ls_cuobj
+*            AND atinn EQ ls_atinn.
+*          IF sy-subrc EQ 0.
+**            CONSULTA A LA TABLA CAWN
+*            CLEAR: ls_atzhl.
+*            SELECT SINGLE atzhl
+*              INTO ls_atzhl
+*              FROM cawn
+*              WHERE atwrt EQ ls_atwrt
+*              AND atinn EQ ls_atinn.
+*            IF sy-subrc EQ 0.
+**              CONSULTA A LA TABLA CAWNT
+*              SELECT SINGLE atwtb
+*                INTO (<fs_table>-ztipo_prod)
+*                FROM cawnt
+*                WHERE atzhl EQ ls_atzhl
+*                AND atinn EQ ls_atinn
+*                AND spras EQ sy-langu.
+*            ENDIF.
+*          ENDIF.
+*        ENDIF.
+*        DATA: ls_cen_pt TYPE inob-objek.
+*        CONCATENATE <fs_table>-zcentro <fs_table>-arbpl INTO ls_cen_pt.
+**        CONSULTA A LA TABLA INOB 2
+*        CLEAR: ls_cuobj.
+*        SELECT SINGLE cuobj
+*          INTO ls_cuobj
+*          FROM inob
+*          WHERE objek EQ ls_cen_pt
+*          AND klart EQ '019'.
+*        IF sy-subrc EQ 0.
+*          CLEAR: ls_atinn.
+*          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+*            EXPORTING
+*              input  = 'Z_TIPO_BLOQUE'
+*            IMPORTING
+*              output = ls_atinn.
+**          CONSULTA A LA TABLA AUSP
+*          CLEAR: ls_atwrt.
+*          SELECT SINGLE atwrt
+*            INTO ls_atwrt
+*            FROM ausp
+*            WHERE objek EQ ls_cuobj
+*            AND atinn EQ ls_atinn.
+*          IF sy-subrc EQ 0.
+**            CONSULTA A LA TABLA CAWN
+*            CLEAR: ls_atzhl.
+*            SELECT SINGLE atzhl
+*              INTO ls_atzhl
+*              FROM cawn
+*              WHERE atwrt EQ ls_atwrt
+*              AND atinn EQ ls_atinn.
+*            IF sy-subrc EQ 0.
+**              CONSULTA A LA TABLA CAWNT
+*              SELECT SINGLE atwtb
+*                INTO (<fs_table>-ztipo_bloque)
+*                FROM cawnt
+*                WHERE atzhl EQ ls_atzhl
+*                AND atinn EQ ls_atinn
+*                AND spras EQ sy-langu.
+*            ENDIF.
+*          ENDIF.
+*        ENDIF.
+*      ENDLOOP.
+
+"EMAT - Enrique Aguirre - AGP-921 - 13.10.2020 - Comentar
+
+"EMAT - Enrique Aguirre - AGP-921 - 13.10.2020 - I
+DATA: lr_aufnr TYPE RANGE OF aufnr.
+
+lr_aufnr = VALUE #( FOR ls_aufnr IN lt_ioconf_tab
+                  ( sign = 'I'
+                    option = 'EQ'
+                    low = ls_aufnr-aufnr )
+                  ).
+
+    DELETE ADJACENT DUPLICATES FROM lr_aufnr.
+
+    SELECT afpo~aufnr,
+           afpo~kdauf,
+           afpo~posnr,
+           afpo~pwerk,
+           aufk~zzcolor,
+           aufk~zzst_toc,
+           aufk~auart,
+           afko~dispo,
+           afko~gstrp,
+           afko~gltrp,
+           afko~cy_seqnr,
+           caufv~ftrmi
+    FROM afpo
+    inner join aufk
+    on afpo~aufnr = aufk~aufnr
+    inner join afko
+    on afpo~aufnr = afko~aufnr
+    inner join caufv
+    on afpo~aufnr = caufv~aufnr
+    WHERE afpo~aufnr in @lr_aufnr
+    INTO TABLE @data(it_aufnr).
 
 
-        SELECT SINGLE kdauf posnr pwerk
-          INTO (<fs_table>-zped_clie, <fs_table>-zpos_pedi, <fs_table>-zcentro)
-          FROM afpo
-          WHERE aufnr EQ <fs_table>-aufnr.
-*        CONSULTA A LA TABLA AUFK
-        SELECT SINGLE zzcolor zzst_toc auart
-          INTO (<fs_table>-zcolor_toc, <fs_table>-zestad_toc, <fs_table>-zcla_orden)
-          FROM aufk
-          WHERE aufnr EQ <fs_table>-aufnr.
-*        CONSULTA A LA TABLA AFKO
-        SELECT SINGLE dispo gstrp gltrp cy_seqnr "+@0002-13/11/19
-          INTO (<fs_table>-zplani_nec, <fs_table>-zfec_ini_ex, <fs_table>-zfec_fin_ex, <fs_table>-znum_coois) "+@0002-13/11/19
-          FROM afko
-          WHERE aufnr EQ <fs_table>-aufnr.
-		  
-		  
-		  
-		  
-        IF <fs_table>-zped_clie IS NOT INITIAL.
-*          CONSULTA A LA TABLA VBPA
-          SELECT SINGLE parvw
-            INTO (<fs_table>-zsolicitante)
-            FROM vbpa
-            WHERE vbeln EQ <fs_table>-zped_clie
-            AND parvw EQ 'AG'.
-*          CONSULTA A LA TABLA VBAK
-          SELECT SINGLE vkbur submi
-            INTO (<fs_table>-zmercado, <fs_table>-zlicitacion)
-            FROM vbak
-            WHERE vbeln EQ <fs_table>-zped_clie.
-*          CONSULTA A LA TABLA VBRP
-          SELECT SINGLE vbeln
-            INTO @DATA(ls_vbeln)
-            FROM vbrp
-            WHERE aubel EQ @<fs_table>-zped_clie.
-          IF sy-subrc EQ 0 AND ls_vbeln IS NOT INITIAL.
-*            CONSULTA A LA TABLA ZTVBRK
-            SELECT SINGLE fsalida fllegada awb
-              INTO (<fs_table>-zfecha_etd, <fs_table>-zfecha_eta, <fs_table>-ztracking_number)
-              FROM ztvbrk
-              WHERE factamerica EQ ls_vbeln.
-*            CONSULTA A LA TABLA VBRK
-            SELECT SINGLE fkdat
-              INTO (<fs_table>-zfec_factura)
-              FROM vbrk
-              WHERE vbeln EQ ls_vbeln.
-          ENDIF.
-*          CONSULTA A LA TABLA VBKD
-          SELECT SINGLE bstdk inco1
-            INTO (<fs_table>-zfec_referente, <fs_table>-zincoterms)
-            FROM vbkd
-            WHERE vbeln EQ <fs_table>-zped_clie.
-        ENDIF.
-		
-		
-		
-		
-*        CONSULTA A LA TABLA CAUFV
-        SELECT SINGLE ftrmi
-          INTO (<fs_table>-zfecha_lib)
-          FROM caufv
-          WHERE aufnr EQ <fs_table>-aufnr.
-		  
-		  
-		  
-*        CONSULTA A LA TABLA MAKT
-        SELECT SINGLE maktx
-          INTO (<fs_table>-ztext_mat)
-          FROM makt
-          WHERE matnr EQ <fs_table>-matnr
-          AND spras EQ sy-langu.
-*        CONSULTA A LA TABLA MARM
-        DATA: ls_matnr_like TYPE mara-matnr.
-        CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
-          EXPORTING
-            input  = <fs_table>-matnr
-          IMPORTING
-            output = ls_matnr_like.
-        CONCATENATE '%' ls_matnr_like INTO ls_matnr_like.
-        SELECT SINGLE umren
-          INTO (<fs_table>-zarea_pieza)
-          FROM marm
-          WHERE matnr EQ ls_matnr_like
-          AND meinh EQ 'M2'.
-        IF <fs_table>-zarea_pieza IS NOT INITIAL AND <fs_table>-zarea_pieza > 0.
-          <fs_table>-zarea_pieza = <fs_table>-zarea_pieza / 100.
-        ENDIF.
-		
-		
-*        CONSULTA A LA TABLA INOB 1
-        SELECT SINGLE cuobj
-          INTO @DATA(ls_cuobj)
-          FROM inob
-          WHERE objek LIKE @ls_matnr_like
-          AND klart EQ '001'.
-        IF sy-subrc EQ 0.
-          DATA: ls_atinn TYPE ausp-atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_AGP_LEVEL'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP 1
-          SELECT SINGLE atwrt
-            INTO (<fs_table>-znivel_agp)
-            FROM ausp
-            WHERE objek EQ ls_cuobj
-            AND atinn EQ ls_atinn.
 
-          CLEAR: ls_atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_PIECE_TYPE'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP 2
-          SELECT SINGLE atwrt
-            INTO @DATA(ls_atwrt)
-            FROM ausp
-            WHERE objek EQ @ls_cuobj
-            AND atinn EQ @ls_atinn.
-          IF sy-subrc EQ 0.
-*            CONSULTA A LA TABLA CAWN
-            SELECT SINGLE atzhl
-              INTO @DATA(ls_atzhl)
-              FROM cawn
-              WHERE atwrt EQ @ls_atwrt
-              AND atinn EQ @ls_atinn.
-            IF sy-subrc EQ 0.
-*              CONSULTA A LA TABLA CAWNT
-              SELECT SINGLE atwtb
-                INTO (<fs_table>-ztipo_bloque)
-                FROM cawnt
-                WHERE atzhl EQ ls_atzhl
-                AND atinn EQ ls_atinn
-                AND spras EQ sy-langu.
-            ENDIF.
-          ENDIF.
+DATA: lr_zped_clie TYPE RANGE OF vbeln.
 
-          CLEAR: ls_atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_BALLISTIC_STANDARD'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP 2
-          CLEAR: ls_atwrt.
-          SELECT SINGLE atwrt
-            INTO ls_atwrt
-            FROM ausp
-            WHERE objek EQ ls_cuobj
-            AND atinn EQ ls_atinn.
-          IF sy-subrc EQ 0.
-*            CONSULTA A LA TABLA CAWN
-            CLEAR: ls_atzhl.
-            SELECT SINGLE atzhl
-              INTO ls_atzhl
-              FROM cawn
-              WHERE atwrt EQ ls_atwrt
-              AND atinn EQ ls_atinn.
-            IF sy-subrc EQ 0.
-*              CONSULTA A LA TABLA CAWNT
-              SELECT SINGLE atwtb
-                INTO (<fs_table>-zest_balistico)
-                FROM cawnt
-                WHERE atzhl EQ ls_atzhl
-                AND atinn EQ ls_atinn
-                AND spras EQ sy-langu.
-            ENDIF.
-          ENDIF.
+lr_zped_clie = VALUE #( FOR wa_zped_clie IN lt_ioconf_tab
+                  ( sign = 'I'
+                    option = 'EQ'
+                    low = wa_zped_clie-zped_clie )
+                      ).
 
-          CLEAR: ls_atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_BUSINESS_LINE'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP 2
-          CLEAR: ls_atwrt.
-          SELECT SINGLE atwrt
-            INTO ls_atwrt
-            FROM ausp
-            WHERE objek EQ ls_cuobj
-            AND atinn EQ ls_atinn.
-          IF sy-subrc EQ 0.
-*            CONSULTA A LA TABLA CAWN
-            CLEAR: ls_atzhl.
-            SELECT SINGLE atzhl
-              INTO ls_atzhl
-              FROM cawn
-              WHERE atwrt EQ ls_atwrt
-              AND atinn EQ ls_atinn.
-            IF sy-subrc EQ 0.
-*              CONSULTA A LA TABLA CAWNT
-              SELECT SINGLE atwtb
-                INTO (<fs_table>-zunid_negocio)
-                FROM cawnt
-                WHERE atzhl EQ ls_atzhl
-                AND atinn EQ ls_atinn
-                AND spras EQ sy-langu.
-            ENDIF.
-          ENDIF.
+    DELETE ADJACENT DUPLICATES FROM lr_zped_clie.
+    DELETE lr_zped_clie WHERE low is INITIAL.
 
-          CLEAR: ls_atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_TRAZABILITY'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP 2
-          CLEAR: ls_atwrt.
-          SELECT SINGLE atwrt
-            INTO ls_atwrt
-            FROM ausp
-            WHERE objek EQ ls_cuobj
-            AND atinn EQ ls_atinn.
-          IF sy-subrc EQ 0.
-*            CONSULTA A LA TABLA CAWN
-            CLEAR: ls_atzhl.
-            SELECT SINGLE atzhl
-              INTO ls_atzhl
-              FROM cawn
-              WHERE atwrt EQ ls_atwrt
-              AND atinn EQ ls_atinn.
-            IF sy-subrc EQ 0.
-*              CONSULTA A LA TABLA CAWNT
-              SELECT SINGLE atwtb
-                INTO (<fs_table>-ztrazabilidad)
-                FROM cawnt
-                WHERE atzhl EQ ls_atzhl
-                AND atinn EQ ls_atinn
-                AND spras EQ sy-langu.
-            ENDIF.
-          ENDIF.
+IF lr_zped_clie[] IS NOT INITIAL.
+    select Distinct
+           vbpa~vbeln,
+           vbpa~parvw,
+           vbak~vkbur,
+           vbak~submi,
+           ztvbrk~fsalida,
+           ztvbrk~fllegada,
+           ztvbrk~awb,
+           vbrk~fkdat,
+           vbkd~bstdk,
+           vbkd~inco1
+    from vbpa
+    inner join vbak
+    on vbpa~vbeln = vbak~vbeln
+       AND vbpa~parvw EQ 'AG'
+    inner join vbrp
+    on vbrp~aubel = vbpa~vbeln
+    inner join ztvbrk
+    on ztvbrk~factamerica = vbrp~vbeln
+    inner join vbrk
+    on vbrk~vbeln = vbrp~vbeln
+    inner join vbkd
+    on vbkd~vbeln = vbpa~vbeln
+    where vbpa~vbeln in @lr_zped_clie
+    into TABLE @data(it_vbeln).
+ENDIF.
 
-          CLEAR: ls_atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_GEOMETRY_TYPE'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP 2
-          CLEAR: ls_atwrt.
-          SELECT SINGLE atwrt
-            INTO ls_atwrt
-            FROM ausp
-            WHERE objek EQ ls_cuobj
-            AND atinn EQ ls_atinn.
-          IF sy-subrc EQ 0.
-*            CONSULTA A LA TABLA CAWN
-            CLEAR: ls_atzhl.
-            SELECT SINGLE atzhl
-              INTO ls_atzhl
-              FROM cawn
-              WHERE atwrt EQ ls_atwrt
-              AND atinn EQ ls_atinn.
-            IF sy-subrc EQ 0.
-*              CONSULTA A LA TABLA CAWNT
-              SELECT SINGLE atwtb
-                INTO (<fs_table>-ztipo_geome)
-                FROM cawnt
-                WHERE atzhl EQ ls_atzhl
-                AND atinn EQ ls_atinn
-                AND spras EQ sy-langu.
-            ENDIF.
-          ENDIF.
+DATA: lr_matnr TYPE RANGE OF matnr.
 
-          CLEAR: ls_atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_PRODUCT_TYPE'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP 2
-          CLEAR: ls_atwrt.
-          SELECT SINGLE atwrt
-            INTO ls_atwrt
-            FROM ausp
-            WHERE objek EQ ls_cuobj
-            AND atinn EQ ls_atinn.
-          IF sy-subrc EQ 0.
-*            CONSULTA A LA TABLA CAWN
-            CLEAR: ls_atzhl.
-            SELECT SINGLE atzhl
-              INTO ls_atzhl
-              FROM cawn
-              WHERE atwrt EQ ls_atwrt
-              AND atinn EQ ls_atinn.
-            IF sy-subrc EQ 0.
-*              CONSULTA A LA TABLA CAWNT
-              SELECT SINGLE atwtb
-                INTO (<fs_table>-ztipo_prod)
-                FROM cawnt
-                WHERE atzhl EQ ls_atzhl
-                AND atinn EQ ls_atinn
-                AND spras EQ sy-langu.
-            ENDIF.
-          ENDIF.
-        ENDIF.
-        DATA: ls_cen_pt TYPE inob-objek.
-        CONCATENATE <fs_table>-zcentro <fs_table>-arbpl INTO ls_cen_pt.
-*        CONSULTA A LA TABLA INOB 2
-        CLEAR: ls_cuobj.
-        SELECT SINGLE cuobj
-          INTO ls_cuobj
-          FROM inob
-          WHERE objek EQ ls_cen_pt
-          AND klart EQ '019'.
-        IF sy-subrc EQ 0.
-          CLEAR: ls_atinn.
-          CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
-            EXPORTING
-              input  = 'Z_TIPO_BLOQUE'
-            IMPORTING
-              output = ls_atinn.
-*          CONSULTA A LA TABLA AUSP
-          CLEAR: ls_atwrt.
-          SELECT SINGLE atwrt
-            INTO ls_atwrt
-            FROM ausp
-            WHERE objek EQ ls_cuobj
-            AND atinn EQ ls_atinn.
-          IF sy-subrc EQ 0.
-*            CONSULTA A LA TABLA CAWN
-            CLEAR: ls_atzhl.
-            SELECT SINGLE atzhl
-              INTO ls_atzhl
-              FROM cawn
-              WHERE atwrt EQ ls_atwrt
-              AND atinn EQ ls_atinn.
-            IF sy-subrc EQ 0.
-*              CONSULTA A LA TABLA CAWNT
-              SELECT SINGLE atwtb
-                INTO (<fs_table>-ztipo_bloque)
-                FROM cawnt
-                WHERE atzhl EQ ls_atzhl
-                AND atinn EQ ls_atinn
-                AND spras EQ sy-langu.
-            ENDIF.
-          ENDIF.
-        ENDIF.
-      ENDLOOP.
+lr_matnr = VALUE #( FOR wa_matnr IN lt_ioconf_tab
+                  ( sign = 'I'
+                    option = 'EQ'
+                    low = wa_matnr-matnr )
+                  ).
+
+DELETE ADJACENT DUPLICATES FROM lr_matnr.
+
+DATA: lr_atinn TYPE RANGE OF ausp-atinn.
+TYPES: BEGIN OF ty_atinn,
+         atinn TYPE ausp-atinn,
+         descatinn TYPE string,
+       END OF ty_atinn.
+
+DATA: it_atinn TYPE TABLE OF ty_atinn.
+DATA: wa_atinn LIKE LINE OF it_atinn.
+
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING FIELD-SYMBOL(<fs_attin>).
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_AGP_LEVEL'
+  IMPORTING
+    output = <fs_attin>-low.
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_AGP_LEVEL'.
+APPEND wa_atinn TO it_atinn.
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING <fs_attin>.
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_PIECE_TYPE'
+  IMPORTING
+    output = <fs_attin>-low.
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_PIECE_TYPE'.
+APPEND wa_atinn TO it_atinn.
+
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING <fs_attin>.
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_BALLISTIC_STANDARD'
+  IMPORTING
+    output = <fs_attin>-low.
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_BALLISTIC_STANDARD'.
+APPEND wa_atinn TO it_atinn.
+
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING <fs_attin>.
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_BUSINESS_LINE'
+  IMPORTING
+    output = <fs_attin>-low.
+
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_BUSINESS_LINE'.
+APPEND wa_atinn TO it_atinn.
+
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING <fs_attin>.
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_TRAZABILITY'
+  IMPORTING
+    output = <fs_attin>-low.
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_TRAZABILITY'.
+APPEND wa_atinn TO it_atinn.
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING <fs_attin>.
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_GEOMETRY_TYPE'
+  IMPORTING
+    output = <fs_attin>-low.
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_GEOMETRY_TYPE'.
+APPEND wa_atinn TO it_atinn.
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING <fs_attin>.
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_PRODUCT_TYPE'
+  IMPORTING
+    output = <fs_attin>-low.
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_PRODUCT_TYPE'.
+APPEND wa_atinn TO it_atinn.
+
+
+APPEND INITIAL LINE TO lr_atinn ASSIGNING <fs_attin>.
+<fs_attin>-sign = 'I'.
+<fs_attin>-option = 'EQ'.
+CALL FUNCTION 'CONVERSION_EXIT_ATINN_INPUT'
+  EXPORTING
+    input  = 'Z_TIPO_BLOQUE'
+  IMPORTING
+    output = <fs_attin>-low.
+
+
+wa_atinn-atinn     = <fs_attin>-low.
+wa_atinn-descatinn = 'Z_TIPO_BLOQUE'.
+APPEND wa_atinn TO it_atinn.
+
+select makt~matnr,
+       makt~maktx,
+       marm~umren,
+      inob~cuobj,
+      inob~klart,
+      ausp~atinn,
+      ausp~atwrt,
+      cawn~atzhl,
+      cawnt~atwtb
+from makt
+inner join marm
+on    makt~matnr = marm~matnr
+  and makt~spras = 'S'
+  and marm~meinh = 'M2'
+inner join inob
+on  inob~objek = marm~matnr
+inner join ausp
+on  inob~cuobj = ausp~objek
+    and inob~klart in ('001','019')
+inner join cawn
+on  ausp~atwrt = cawn~atwrt
+    and ausp~atinn = cawn~atinn
+inner join cawnt
+on  cawnt~atzhl = cawn~atzhl
+    and cawnt~spras = 'S'
+    and cawnt~atinn = cawn~atinn
+where makt~matnr in @lr_matnr and
+      ausp~atinn in @lr_atinn
+into table @data(it_maktinob).
+
+DATA: ls_atinn TYPE ausp-atinn.
+LOOP AT lt_ioconf_tab ASSIGNING FIELD-SYMBOL(<fs_table>).
+  READ TABLE it_aufnr ASSIGNING FIELD-SYMBOL(<_aufnr>) WITH KEY aufnr = <fs_table>-aufnr.
+  IF sy-subrc = 0.
+    <fs_table>-zped_clie    = <_aufnr>-kdauf.
+    <fs_table>-zpos_pedi    = <_aufnr>-posnr.
+    <fs_table>-zcentro      = <_aufnr>-pwerk.
+    <fs_table>-zcolor_toc   = <_aufnr>-zzcolor.
+    <fs_table>-zestad_toc   = <_aufnr>-zzst_toc.
+    <fs_table>-zcla_orden   = <_aufnr>-auart.
+    <fs_table>-zplani_nec   = <_aufnr>-dispo.
+    <fs_table>-zfec_ini_ex  = <_aufnr>-gstrp.
+    <fs_table>-zfec_fin_ex  = <_aufnr>-gltrp.
+    <fs_table>-znum_coois   = <_aufnr>-cy_seqnr.
+    <fs_table>-zfecha_lib   = <_aufnr>-ftrmi.
+  ENDIF.
+
+  READ TABLE it_vbeln ASSIGNING FIELD-SYMBOL(<_vbeln>) WITH KEY vbeln = <fs_table>-zped_clie.
+  IF sy-subrc = 0.
+    <fs_table>-zsolicitante       = <_vbeln>-parvw.
+    <fs_table>-zmercado           = <_vbeln>-vkbur.
+    <fs_table>-zlicitacion        = <_vbeln>-submi.
+    <fs_table>-zfecha_etd         = <_vbeln>-fsalida.
+    <fs_table>-zfecha_eta         = <_vbeln>-fllegada.
+    <fs_table>-ztracking_number   = <_vbeln>-awb.
+    <fs_table>-zfec_factura       = <_vbeln>-fkdat.
+    <fs_table>-zfec_referente     = <_vbeln>-bstdk.
+    <fs_table>-zincoterms         = <_vbeln>-inco1.
+  ENDIF.
+
+  READ TABLE it_maktinob ASSIGNING FIELD-SYMBOL(<_inob>) WITH KEY matnr = <fs_table>-matnr.
+  IF sy-subrc = 0.
+     <fs_table>-ztext_mat    =  <_inob>-maktx.
+     <fs_table>-zarea_pieza  =  <_inob>-umren.
+     IF <fs_table>-zarea_pieza IS NOT INITIAL AND <fs_table>-zarea_pieza > 0.
+      <fs_table>-zarea_pieza = <fs_table>-zarea_pieza / 100.
+     ENDIF.
+
+     READ TABLE it_atinn ASSIGNING FIELD-SYMBOL(<fs_atinn_desc>) WITH KEY atinn = <_inob>-atinn.
+       IF <fs_atinn_desc>-descatinn EQ 'Z_AGP_LEVEL'.
+           <fs_table>-znivel_agp = <_inob>-atwrt.
+       ENDIF.
+
+       IF <fs_atinn_desc>-descatinn EQ 'Z_PIECE_TYPE'.
+        <fs_table>-ztipo_bloque = <_inob>-atwtb.
+       ENDIF.
+
+       IF <fs_atinn_desc>-descatinn EQ 'Z_BALLISTIC_STANDARD'.
+         <fs_table>-zest_balistico = <_inob>-atwtb.
+       ENDIF.
+
+       IF <fs_atinn_desc>-descatinn EQ 'Z_BUSINESS_LINE'.
+         <fs_table>-zunid_negocio = <_inob>-atwtb.
+       ENDIF.
+
+       IF <fs_atinn_desc>-descatinn EQ 'Z_TRAZABILITY'.
+         <fs_table>-ztrazabilidad = <_inob>-atwtb.
+       ENDIF.
+
+       IF <fs_atinn_desc>-descatinn EQ 'Z_GEOMETRY_TYPE'.
+         <fs_table>-ztipo_geome = <_inob>-atwtb.
+       ENDIF.
+
+       IF <fs_atinn_desc>-descatinn EQ 'Z_PRODUCT_TYPE'.
+         <fs_table>-ztipo_prod = <_inob>-atwtb.
+       ENDIF.
+
+       IF <fs_atinn_desc>-descatinn EQ 'Z_TIPO_BLOQUE'.
+         <fs_table>-ztipo_bloque = <_inob>-atwtb.
+       ENDIF.
+
+  ENDIF.
+
+ENDLOOP.
+
+
+
+
+"EMAT - Enrique Aguirre - AGP-921 - 13.10.2020 - I
+
 
 *      RANGOS PARA NUEVO FILTRO
       DATA: lr_charg TYPE RANGE OF afpo-charg,
