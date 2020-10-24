@@ -1,6 +1,6 @@
 function zpp_confirmacion_pickin_ov_wms.
 *"----------------------------------------------------------------------
-*"*"Interfase local
+*"*"Interfase local EMAT
 *"  IMPORTING
 *"     VALUE(INPUT) TYPE  ZSYNC_SAPSHIPMENT
 *"----------------------------------------------------------------------
@@ -438,7 +438,7 @@ function zpp_confirmacion_pickin_ov_wms.
         break everis_func.
         break everis_tech.
 
-        select single valor_low into @data(vl_valor_low)
+        select valor_low into TABLE @data(vl_valor_low)
           from zconstantes
           where zmodulo       = 'SD'
             and programm      = 'ZPP_CONFIRMACION_PICKIN_OV_WMS'
@@ -451,7 +451,7 @@ function zpp_confirmacion_pickin_ov_wms.
           free: lt_zlt_trama_retor.
           select * into table lt_zlt_trama_retor
             from zlt_trama_retor
-           where sap_orden_salida = vl_valor_low.
+           where sap_orden_salida IN ( vl_valor_low ) .
           if sy-subrc = 0.
 
           endif.
