@@ -22,7 +22,7 @@ method get_update BY DATABASE FUNCTION FOR HDB LANGUAGE
 Return
 
 Select distinct
---
+---
     PedidoItem.MANDT as Mandante,
     1 as num,
     PedidoItem.Werks as Planta,
