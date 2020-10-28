@@ -35,7 +35,10 @@ where vbak~vbeln in
 
 select Distinct
        lips~vbeln,
-       mch1~charg,
+       lips~posnr,
+       lips~matnr,
+       lips~charg,
+       lips~lfimg,
        mch1~vfdat
 from lips
 inner join mch1
@@ -75,3 +78,7 @@ where mara~matnr in
                     on tori~parent_key = torr~db_key
                      and tori~base_btd_id IS NOT NULL
               WHERE torr~tor_id = '00000000006100018000' )
+
+
+
+ 
