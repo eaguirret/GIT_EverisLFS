@@ -75,7 +75,3 @@ where mara~matnr in
                     on tori~parent_key = torr~db_key
                      and tori~base_btd_id IS NOT NULL
               WHERE torr~tor_id = '00000000006100018000' )
-
-
-
- 
