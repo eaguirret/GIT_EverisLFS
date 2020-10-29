@@ -63,7 +63,13 @@ and likp~vbeln is null
 select mara~matnr,
        makt~maktx,
        mean~ean11,
-       mean~eantp
+       mean~eantp,
+       zsdcalc~FAMILIA_SAP,
+       zsdcalc~COD_FAMILIA,
+       zsdcalc~MATERIAL_PROVEEDOR,
+       zsdcalc~DESC_FAMILIA,
+       zsdcalc~U_X_B,
+       zsdcalc~N_TOT_BULTOS
 from mara
 inner join makt
     on makt~matnr = mara~matnr
@@ -78,7 +84,3 @@ where mara~matnr in
                     on tori~parent_key = torr~db_key
                      and tori~base_btd_id IS NOT NULL
               WHERE torr~tor_id = '00000000006100018000' )
-
-
-
- 
