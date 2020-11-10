@@ -126,24 +126,6 @@ IF sy-subrc EQ 0.
     ENDIF.
   ENDIF.
 
-
-"EMAT - Enrique Aguirre - 05.11.2020 -    AGP-1022 -  Comentado temporalmente para pasar  a PRD
-* From AGP Switzerland or America to AGP Germany2  and ZFER comes from Belgium .. 2 steps (643)
-*  IF ( likp-kunnr = 'PDE02' AND lips-werks = 'CH01')
-*  OR ( likp-kunnr = 'PDE02' AND lips-werks = 'PA01') .
-*    IF  likp-lfart = 'ZEI1' OR likp-lfart =  'ZEI2' OR likp-lfart =   'ZEI3' OR likp-lfart =  'ZEI4' AND likp-lfart = 'LF'.
-*      SELECT COUNT( * ) FROM marc
-*                      WHERE matnr = lips-matnr
-*                       AND  werks IN ('BE01' , 'BE02') .
-*      IF sy-subrc = 0.
-*        IF  lips-pstyv NE  'ZHUP' AND lips-pstyv NE 'ZHUS'.
-*          lips-bwart = '643'.
-*        ENDIF.
-*      ENDIF.
-*    ENDIF.
-*  ENDIF.
-"EMAT - Enrique Aguirre - 05.11.2020 -    AGP-1022 -  Comentado temporalmente para pasar  a PRD
-
 * For direct deliveries from Belgium
 "EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - I
 DATA: lr_lfart TYPE RANGE OF lfart.
@@ -219,22 +201,6 @@ DELETE ADJACENT DUPLICATES FROM lr_vkorg.
 *     likp-lfart = 'ZEI2' OR
 *     likp-lfart = 'ZEI3' OR
 *     likp-lfart = 'ZEI4'.
-
-"EMAT - Enrique Aguirre - 05.11.2020 -    AGP-1022
-DATA: wflag TYPE C.
-SELECT SINGLE VBELN INTO @DATA(wa_vbeln) FROM VBAK WHERE VBELN = @LIPS-VGBEL.
-IF SY-SUBRC NE 0.
-  SELECT SINGLE EBELN INTO @DATA(wa_vbeln_) FROM ekpo WHERE EBELN = @LIPS-VGBEL AND bstyp NE 'L'.
-  IF SY-SUBRC = 0.
-    wflag = 'X'.
-  ENDIF.
-ELSE.
-  wflag = 'X'.
-ENDIF.
-"EMAT - Enrique Aguirre - 05.11.2020 -    AGP-1022
-
-IF wflag IS INITIAL. "EMAT - Enrique Aguirre - 05.11.2020 -    AGP-1022
-
    IF  likp-lfart in lr_lfart.
 "EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
     IF likp-route = space AND
@@ -274,7 +240,6 @@ likp-route = '000000'.
       ENDIF.
     ENDIF.
   ENDIF.
-ENDIF.
 ENDIF.
 
 "Exit INBOUND DELIVERY Subcontratación
