@@ -95,7 +95,7 @@ IF sy-subrc EQ 0.
     ENDIF.
   ENDIF.
 
-* From AGP Belgium to AGP Switzerland OR America
+* From AGP Belgium to AGP Switzerland OR America en 2 pasos
   IF  ( lips-werks = 'BE01' OR lips-werks = 'BE02' ) AND likp-kunnr = 'PCH01'.
     IF  likp-lfart = 'ZEI1' OR likp-lfart =  'ZEI2' OR likp-lfart =   'ZEI3' OR likp-lfart =  'ZEI4'.
       IF  lips-pstyv NE  'ZHUP' AND lips-pstyv NE 'ZHUS'.
@@ -111,7 +111,7 @@ IF sy-subrc EQ 0.
     ENDIF.
   ENDIF.
 
-* From AGP Switzerland or America to AGP Germany  and ZFER comes from Belgium
+* From AGP Switzerland or America to AGP Germany  and ZFER comes from Belgium .. 2 steps (643)
   IF ( likp-kunnr = 'PDE01' AND lips-werks = 'CH01')
   OR ( likp-kunnr = 'PDE01' AND lips-werks = 'PA01') .
     IF  likp-lfart = 'ZEI1' OR likp-lfart =  'ZEI2' OR likp-lfart =   'ZEI3' OR likp-lfart =  'ZEI4' AND likp-lfart = 'LF'.
@@ -126,64 +126,30 @@ IF sy-subrc EQ 0.
     ENDIF.
   ENDIF.
 
+* From AGP Switzerland or America to AGP Germany2  and ZFER comes from Belgium .. 2 steps (643)
+  IF ( likp-kunnr = 'PDE02' AND lips-werks = 'CH01')
+  OR ( likp-kunnr = 'PDE02' AND lips-werks = 'PA01') .
+    IF  likp-lfart = 'ZEI1' OR likp-lfart =  'ZEI2' OR likp-lfart =   'ZEI3' OR likp-lfart =  'ZEI4' AND likp-lfart = 'LF'.
+      SELECT COUNT( * ) FROM marc
+                      WHERE matnr = lips-matnr
+                       AND  werks IN ('BE01' , 'BE02') .
+      IF sy-subrc = 0.
+        IF  lips-pstyv NE  'ZHUP' AND lips-pstyv NE 'ZHUS'.
+          lips-bwart = '643'.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+
+
 * For direct deliveries from Belgium
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - I
-DATA: lr_lfart TYPE RANGE OF lfart.
-lr_lfart = VALUE #( FOR wa_lfart IN lt_constantes where ( campo = 'LFART' )
-                  ( sign = 'I'
-                    option = 'EQ'
-                    low = CONDENSE( wa_lfart-valor1 )
-                  ) ).
-
-DELETE ADJACENT DUPLICATES FROM lr_lfart.
-
-DATA: lr_werks_ TYPE RANGE OF WERKS_D.
-lr_werks_ = VALUE #( FOR wa_werks IN lt_constantes where ( campo = 'WERKS' )
-                  ( sign = 'I'
-                    option = 'EQ'
-                    low = CONDENSE( wa_werks-valor1 )
-                  ) ).
-
-
-DELETE ADJACENT DUPLICATES FROM lr_werks_.
-
-DATA: lr_tcode TYPE RANGE OF TCODE.
-lr_tcode = VALUE #( FOR wa_tcode IN lt_constantes where ( campo = 'TCODE' )
-                  ( sign = 'I'
-                    option = 'EQ'
-                    low = CONDENSE( wa_tcode-valor1 )
-                  ) ).
-
-DELETE ADJACENT DUPLICATES FROM lr_tcode.
-
-DATA: lr_vkorg TYPE RANGE OF VKORG.
-lr_vkorg = VALUE #( FOR wa_vkorg IN lt_constantes where ( campo = 'VKORG' )
-                  ( sign = 'I'
-                    option = 'EQ'
-                    low = CONDENSE( wa_vkorg-valor1 )
-                  ) ).
-
-DELETE ADJACENT DUPLICATES FROM lr_vkorg.
-
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - I
-
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-  "IF  likp-lfart = 'ZENT' AND likp-lfart = 'LF'.
-  IF  likp-lfart in lr_lfart.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-
+  IF  likp-lfart = 'ZENT' AND likp-lfart = 'LF'.
     SELECT COUNT( * ) FROM marc
                    WHERE matnr = lips-matnr
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-                    "AND  werks IN ('BE01' , 'BE02') .
-                    AND  werks IN lr_werks_.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-
+                    AND  werks IN ('BE01' , 'BE02') .
     IF sy-subrc = 0.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-      "IF  sy-tcode = 'VL01N' OR sy-tcode+0(4) = 'VL10'.
-      IF  sy-tcode in lr_tcode.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 c
+      IF  sy-tcode = 'VL01N' OR sy-tcode+0(4) = 'VL10'.
         likp-kostk = 'A'.
       ENDIF.
     ENDIF.
@@ -192,51 +158,29 @@ DELETE ADJACENT DUPLICATES FROM lr_vkorg.
 
 * Determination of the route in case of empty value - Belgium
 *============================================================
-* All the outbound deliveries in Belgium must have the route 00000 NOT RELEVANT
+* All the outbound deliveries in Belgium must have the route 00000 NOT RELEVANT.
 * Fordirect deliveries and intercompany from Belgium
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-*  IF likp-lfart = 'LF' OR
-*     likp-lfart = 'ZENT' OR
-*     likp-lfart = 'ZEI1' OR
-*     likp-lfart = 'ZEI2' OR
-*     likp-lfart = 'ZEI3' OR
-*     likp-lfart = 'ZEI4'.
-   IF  likp-lfart in lr_lfart.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-    IF likp-route = space AND
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-       "likp-vkorg = 'BE01'.
-       likp-vkorg in lr_vkorg.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
+  IF likp-lfart = 'LF' OR likp-lfart = 'ZENT' OR likp-lfart = 'ZEI1' OR likp-lfart = 'ZEI2' OR likp-lfart = 'ZEI3' OR likp-lfart = 'ZEI4'.
+    IF likp-route = space AND likp-vkorg = 'BE01'.
       likp-route = '000000'.
     ENDIF.
 * Intercompany deliveries Switzerland->Europe
 * with a material produced in Belgium must have generic route NOT RELEVANT 00000
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-*    IF likp-vkorg =  'CH01' OR
-*       likp-vkorg =  'UE01' OR
-*       likp-vkorg = 'PA01' .
-   IF  likp-vkorg in lr_vkorg.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
+    IF likp-vkorg =  'CH01' OR likp-vkorg =  'UE01' OR likp-vkorg = 'DE01' OR  likp-vkorg = 'PA01'  .
       SELECT COUNT( * )
              FROM marc
              WHERE matnr = lips-matnr
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-               AND  werks IN lr_werks_.
-               "AND werks IN ('BE01','BE02').
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-
+               AND werks IN ('BE01','BE02').
       IF sy-subrc = 0.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
-*        IF likp-vkorg =  'CH01'.
-*          likp-route = '000000'.
-*        ELSEIF likp-vkorg =  'UE01'.
-*          likp-route = '000000'.
-*        ELSEIF likp-vkorg =  'PA01'.
-*          likp-route = '000000'.
-*        ENDIF.
-likp-route = '000000'.
-"EMAT - Enrique Aguirre - 19.10.2020 - AGP-945 - Replace
+        IF likp-vkorg =  'CH01'.
+          likp-route = '000000'.
+        ELSEIF likp-vkorg =  'UE01'.
+          likp-route = '000000'.
+        ELSEIF likp-vkorg =  'DE01'.
+          likp-route = '000000'.
+        ELSEIF likp-vkorg =  'PA01'.
+          likp-route = '000000'.
+        ENDIF.
       ENDIF.
     ENDIF.
   ENDIF.
